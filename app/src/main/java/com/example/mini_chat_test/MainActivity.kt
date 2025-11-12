@@ -31,10 +31,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mini_chat_test.ui.theme.Mini_chat_testTheme
 import com.example.mini_chat_test.websocket.ChatViewModel
+import kotlinx.serialization.json.Json
 
 class MainActivity : ComponentActivity() {
 
     private val viewModel: ChatViewModel by viewModels()
+    val client_id: Long = System.currentTimeMillis()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +45,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             Mini_chat_testTheme {
-                loginScreen(viewModel)
+                loginScreen(viewModel, client_id)
             }
         }
     }
@@ -51,10 +53,9 @@ class MainActivity : ComponentActivity() {
 
 
 @Composable
-fun loginScreen(viewModel: ChatViewModel){
+fun loginScreen(viewModel: ChatViewModel, client_id: Long){
     val status by viewModel.login_status.collectAsState()
     var inputUsername by remember { mutableStateOf("") }
-    val client_id: Long = System.currentTimeMillis()
 
     if (status == "not logged" || status == "failed"){
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -78,7 +79,7 @@ fun loginScreen(viewModel: ChatViewModel){
 
         }
     }else{
-        ChatScreen(viewModel)
+        ChatScreen(viewModel, client_id)
     }
 
 
@@ -87,7 +88,7 @@ fun loginScreen(viewModel: ChatViewModel){
 }
 
 @Composable
-fun ChatScreen(viewModel: ChatViewModel) {
+fun ChatScreen(viewModel: ChatViewModel, client_id: Long) {
     val messages by viewModel.messages.collectAsState()
     val status by viewModel.status.collectAsState()
     var inputMessage by remember { mutableStateOf("") }
@@ -103,7 +104,10 @@ fun ChatScreen(viewModel: ChatViewModel) {
             reverseLayout = true // Show latest message at the bottom
         ) {
             items(messages.reversed()) { message ->
-                Text(text = message, modifier = Modifier.padding(2.dp))
+                val data = Json.decodeFromString<Message>(message)
+                val sender = if (data.client_id == client_id.toString()) "You" else data.client_id
+
+                Text(text = sender + ": " + data.message, modifier = Modifier.padding(2.dp))
             }
         }
 
