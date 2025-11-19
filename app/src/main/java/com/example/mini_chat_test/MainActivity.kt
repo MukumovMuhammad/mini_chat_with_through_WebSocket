@@ -40,8 +40,10 @@ private var TAG = "MAinActivity_TAG"
 
 class MainActivity : ComponentActivity() {
 
-    private val MY_ID: Long = System.currentTimeMillis()
     private val viewModel: ChatViewModel by viewModels()
+
+    val selectedId = mutableStateOf<Int?>(null)
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,8 +52,14 @@ class MainActivity : ComponentActivity() {
 
 
         setContent {
+            val status by viewModel.status.collectAsState()
             Mini_chat_testTheme {
-                loginScreen(viewModel, MY_ID)
+                if (status != "Connected"){
+                    loginScreen(viewModel, status)
+                }
+                else{
+                    viewModel.getUsers()
+                }
             }
         }
     }
@@ -59,46 +67,36 @@ class MainActivity : ComponentActivity() {
 
 
 @Composable
-fun loginScreen(viewModel: ChatViewModel, client_id: Long){
-    val status by viewModel.login_status.collectAsState()
+fun loginScreen(viewModel: ChatViewModel, status: String){
     var inputUsername by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    if (status == "not logged" || status == "failed"){
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            Text(text = "Status: $status", style = MaterialTheme.typography.titleMedium)
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text(text = "Status: $status", style = MaterialTheme.typography.titleMedium)
 
-            Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
 
-            OutlinedTextField(
-                value = inputUsername,
-                onValueChange = { inputUsername = it },
-                label = { Text("Enter username") }
-            )
+        OutlinedTextField(
+            value = inputUsername,
+            onValueChange = { inputUsername = it },
+            label = { Text("Enter username") }
+        )
 
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Enter password") }
-            )
-
-            Button(
-                onClick = {
-                    Log.i(TAG, "Trying to login!")
-                    viewModel.login(inputUsername, password)
-                }
-            ) {
-                Text("Login")
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Enter password") }
+        )
+        Button(
+            onClick = {
+                Log.i(TAG, "Trying to login!")
+                Log.i(TAG, "Username: $inputUsername")
+                Log.i(TAG, "Password: $password")
+                viewModel.login(inputUsername, password)
             }
-
+        ) {
+            Text("Login")
         }
-    }else{
-        ChatScreen(viewModel, client_id)
     }
-
-
-
-
 }
-

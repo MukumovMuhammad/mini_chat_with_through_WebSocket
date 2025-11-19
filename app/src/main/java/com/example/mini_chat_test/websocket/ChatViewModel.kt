@@ -5,9 +5,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mini_chat_test.UserDataResponse
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.Call
 import okhttp3.Callback
@@ -20,12 +22,10 @@ import java.io.IOException
 
 class ChatViewModel: ViewModel() {
 
-    private val serverUrl = "http://192.168.0.116:4000/"
+    private val serverUrl = "http://192.168.123.40:4000/"
+    private val webSocketUrl = "ws://192.168.123.40:4000/ws?user_id="
     private var webSocketClient : WebSocketClient? = null
-
-
-    private val _messages = MutableStateFlow<List<String>>(emptyList())
-    val messages: StateFlow<List<String>> = _messages
+    private val okHttpClient = OkHttpClient()
 
     private val _status = MutableStateFlow("Disconnected")
     val status: StateFlow<String> = _status
@@ -33,8 +33,13 @@ class ChatViewModel: ViewModel() {
     private val _login_status = MutableStateFlow("not logged")
     val login_status: StateFlow<String> = _login_status
 
+
+    private val _userlist = MutableStateFlow<List<Pair<String,Int>>>(emptyList())
+    val userlist: StateFlow<List<Pair<String,Int>>> = _userlist
+
+
     fun WebSocketInit(my_id: Int?) {
-        webSocketClient = WebSocketClient(serverUrl + my_id, AppWebSocketListener(::onMessageReceived, ::onStatusChanged))
+        webSocketClient = WebSocketClient(webSocketUrl + my_id, AppWebSocketListener(::onMessageReceived, ::onStatusChanged))
         connect()
     }
 
@@ -62,12 +67,12 @@ class ChatViewModel: ViewModel() {
 //            .addQueryParameter("client_id", client_id.toString())
 //            .build()
 
-        val okHttpClient = OkHttpClient()
+
 
         val json = """
                 {
-                    "username": "MM",
-                    "password": "1234"
+                    "username": "${username}",
+                    "password": "${password}"
                 }
             """.trimIndent()
 
@@ -113,6 +118,22 @@ class ChatViewModel: ViewModel() {
 
     }
 
+    fun getUsers() {
+        val request = Request.Builder()
+            .url(serverUrl + "all_users")
+            .build()
+
+        okHttpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                println("Failed: $e")
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val body = response.body?.string()
+                println("Response: $body")
+            }
+        })
+    }
     fun sendMessage(message: String) {
         if (message.isNotBlank()) {
             webSocketClient?.sendMessage(message)
@@ -122,7 +143,7 @@ class ChatViewModel: ViewModel() {
     private fun onMessageReceived(message: String) {
         // Update UI state on the main thread
         viewModelScope.launch {
-            _messages.value = _messages.value + message
+//            _messages.value = _messages.value + message
         }
     }
 
@@ -136,6 +157,7 @@ class ChatViewModel: ViewModel() {
         super.onCleared()
         webSocketClient?.disconnect()
     }
+
 
 
 
