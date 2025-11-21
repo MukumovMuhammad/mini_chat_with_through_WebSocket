@@ -1,6 +1,5 @@
 package com.example.mini_chat_test
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,13 +31,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.mini_chat_test.DataClasses.Message
+import com.example.mini_chat_test.DataClasses.MessageData
 import com.example.mini_chat_test.websocket.ChatViewModel
 import kotlinx.serialization.json.Json
 
@@ -69,10 +66,13 @@ fun UserListScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(users) { user ->
-                UserCard(
-                    username = user.first,
-                    onClick = { onUserSelected(user.second) }
-                )
+                if (user.second != getSavedId(context)?.toInt()){
+                    UserCard(
+                        username = user.first,
+                        onClick = { onUserSelected(user.second) }
+                    )
+                }
+
             }
         }
     }
@@ -129,9 +129,9 @@ fun UserCard(
 
 
 @Composable
-fun ChatScreen(viewModel: ChatViewModel) {
-    val messages = emptyList<String>()
+fun ChatScreen(viewModel: ChatViewModel, selectedId: Int) {
 
+    val messages by viewModel.UserMessages.collectAsState()
     var inputMessage by remember { mutableStateOf("") }
 
 
@@ -139,14 +139,13 @@ fun ChatScreen(viewModel: ChatViewModel) {
 
         Spacer(modifier = Modifier.height(4.dp))
 
+        val messagesForList: List<String> = messages[selectedId] ?: emptyList()
         LazyColumn(
             modifier = Modifier.weight(2f).fillMaxWidth().padding(vertical = 10.dp),
             reverseLayout = true // Show latest message at the bottom
         ) {
-            items(messages.reversed()) { message ->
-//                Log.i(TAG, "Here we have message: $message")
-
-                val data = Json.decodeFromString<Message>(message)
+            items(   messagesForList.reversed()){ message ->
+                Text(text=message)
             }
         }
 
@@ -160,7 +159,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
             Spacer(modifier = Modifier.width(5.dp))
             Button(
                 onClick = {
-                    viewModel.sendMessage(inputMessage)
+                    viewModel.sendMessage(selectedId, inputMessage)
                     inputMessage = ""
                 },
             ) {

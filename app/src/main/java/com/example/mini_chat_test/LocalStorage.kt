@@ -20,7 +20,7 @@ fun saveUsernameAndId(context: Context, username: String, id: Int?) {
 }
 
 
-fun getSavededId(context: Context): String? {
+fun getSavedId(context: Context): String? {
     val sharedPref = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
     return sharedPref.getString("id", null)
 }

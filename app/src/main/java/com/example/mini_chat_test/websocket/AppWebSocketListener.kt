@@ -1,3 +1,6 @@
+import com.example.mini_chat_test.DataClasses.MessageData
+import com.example.mini_chat_test.DataClasses.UserDataResponse
+import kotlinx.serialization.json.Json
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
@@ -14,6 +17,8 @@ class AppWebSocketListener(
     }
 
     override fun onMessage(webSocket: WebSocket, text: String) {
+//        val json = Json { ignoreUnknownKeys = true }
+//        val result = text.let { json.decodeFromString<MessageData>(it) }
         onMessage(text)
     }
 

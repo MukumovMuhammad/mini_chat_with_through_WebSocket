@@ -3,13 +3,18 @@ package com.example.mini_chat_test.websocket
 import AppWebSocketListener
 import android.content.Context
 import android.util.Log
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mini_chat_test.DataClasses.MessageData
 import com.example.mini_chat_test.DataClasses.UserDataResponse
+import com.example.mini_chat_test.DataClasses.WebSocketSendingData
+
 import com.example.mini_chat_test.saveUsernameAndId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
@@ -25,8 +30,8 @@ import java.io.IOException
 
 class ChatViewModel: ViewModel() {
 
-    private val serverUrl = "http://192.168.0.119:8000/"
-    private val webSocketUrl = "ws://192.168.0.119:8000/ws?user_id="
+    private val serverUrl = "https://simple-chat-by-mm.onrender.com/"
+    private val webSocketUrl = "https://simple-chat-by-mm.onrender.com/ws?user_id="
     private var webSocketClient : WebSocketClient? = null
     private val okHttpClient = OkHttpClient()
 
@@ -36,6 +41,9 @@ class ChatViewModel: ViewModel() {
     private val _login_status = MutableStateFlow("not logged")
     val login_status: StateFlow<String> = _login_status
 
+
+    private val _UserMessages = MutableStateFlow<Map<Int, List<String>>>(emptyMap())
+    val UserMessages: StateFlow<Map<Int, List<String>>> = _UserMessages
 
     private val _userlist = MutableStateFlow<List<Pair<String,Int>>>(emptyList())
     val userlist: StateFlow<List<Pair<String,Int>>> = _userlist
@@ -59,16 +67,6 @@ class ChatViewModel: ViewModel() {
 
         Log.i("ChatViewModel_TAG", "Trying to login with username: $username and password: $password")
 
-
-
-//        val httpUrl  = HttpUrl.Builder()
-//            .scheme("http")
-//            .host("192.168.0.121")
-//            .port(8080)
-//            .addPathSegment("login")
-//            .addQueryParameter("username", username)
-//            .addQueryParameter("client_id", client_id.toString())
-//            .build()
 
 
 
@@ -107,6 +105,7 @@ class ChatViewModel: ViewModel() {
                     if(result?.status == true){
                         Log.i("ChatViewModel_TAG", "Login success")
                         _login_status.value = "success"
+                        Log.i("ChatViewModel_TAG", "id: ${result?.id}")
                         saveUsernameAndId(context, username, result?.id!!)
                         WebSocketInit(result?.id)
 
@@ -210,16 +209,31 @@ class ChatViewModel: ViewModel() {
         _status.value = "Disconnected"
     }
 
-    fun sendMessage(message: String) {
+    fun sendMessage(reciever_id: Int, message: String) {
         if (message.isNotBlank()) {
-            webSocketClient?.sendMessage(message)
+            val jsonConverter = Json
+            val data = WebSocketSendingData(reciever_id, message)
+            val jsonString = jsonConverter.encodeToString(data)
+            webSocketClient?.sendMessage(jsonString)
+
+
+            val currentMessagesForUser = _UserMessages.value[reciever_id] ?: emptyList()
+            val updatedMessagesForUser = currentMessagesForUser + "You: ${message}"
+            _UserMessages.value = _UserMessages.value + (reciever_id to updatedMessagesForUser)
+
         }
     }
 
     private fun onMessageReceived(message: String) {
         // Update UI state on the main thread
         viewModelScope.launch {
-//            _messages.value = _messages.value + message
+            val json = Json { ignoreUnknownKeys = true }
+            val result = message.let { json.decodeFromString<MessageData>(it) }
+            val currentMessagesForUser = _UserMessages.value[result.from] ?: emptyList()
+            val updatedMessagesForUser = currentMessagesForUser + "${result.username}: ${result.text}"
+            _UserMessages.value = _UserMessages.value + (result.from to updatedMessagesForUser)
+
+
         }
     }
 

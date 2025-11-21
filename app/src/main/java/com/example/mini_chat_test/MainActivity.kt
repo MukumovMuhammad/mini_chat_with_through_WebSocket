@@ -2,13 +2,12 @@ package com.example.mini_chat_test
 
 import android.os.Bundle
 import android.util.Log
-import android.window.OnBackInvokedDispatcher
+
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Column
 
 import androidx.compose.foundation.layout.Spacer
@@ -44,13 +43,12 @@ class MainActivity : ComponentActivity() {
 
     val selectedId = mutableStateOf<Int?>(null)
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        if (getSavededId(this) != null){
-            viewModel.WebSocketInit(getSavededId(this)?.toInt())
+        if (getSavedId(this) != null){
+            viewModel.WebSocketInit(getSavedId(this)?.toInt())
         }
 
         setContent {
@@ -65,7 +63,7 @@ class MainActivity : ComponentActivity() {
                         BackHandler {
                             selectedId.value = null
                         }
-                        ChatScreen(viewModel)
+                        ChatScreen(viewModel, selectedId.value!!)
                     } else {
                         viewModel.getUsers()
                         val users by viewModel.userlist.collectAsState()
@@ -80,8 +78,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
     }
 }
+
 
 
 @Composable
