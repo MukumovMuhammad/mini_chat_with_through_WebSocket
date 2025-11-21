@@ -1,4 +1,4 @@
-package com.example.mini_chat_test
+package com.example.mini_chat_test.DataClasses
 
 import kotlinx.serialization.Serializable
 

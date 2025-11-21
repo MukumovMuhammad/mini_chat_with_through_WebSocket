@@ -1,5 +1,6 @@
 package com.example.mini_chat_test
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,40 +33,55 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.modifier.modifierLocalConsumer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.mini_chat_test.Message
+import com.example.mini_chat_test.DataClasses.Message
 import com.example.mini_chat_test.websocket.ChatViewModel
 import kotlinx.serialization.json.Json
 
 
 @Composable
-fun UserList(
+fun UserListScreen(
     viewModel: ChatViewModel,
     users: List<Pair<String, Int>>,   // (username, userId)
     onUserSelected: (Int) -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(users) { user ->
-            UserCard(
-                username = user.first,
-                userId = user.second,
-                onClick = { onUserSelected(user.second) }
-            )
+    val context = LocalContext.current
+    Column() {
+        Row(modifier = Modifier.fillMaxWidth(),  horizontalArrangement = Arrangement.spacedBy(16.dp)){
+            Text(
+                text = "Your profile ${getSavedUsername(LocalContext.current)}",
+                modifier = Modifier.padding(16.dp),
+                textAlign = TextAlign.Center)
+            Button(
+                onClick = { viewModel.LogOut(context) },
+                modifier = Modifier.padding(16.dp)
+            ) { Text("LogOut") }
+        }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp, 20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(users) { user ->
+                UserCard(
+                    username = user.first,
+                    onClick = { onUserSelected(user.second) }
+                )
+            }
         }
     }
+
 }
 
 @Composable
 fun UserCard(
     username: String,
-    userId: Int,
     onClick: () -> Unit
 ) {
     Card(
@@ -106,11 +122,6 @@ fun UserCard(
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold
                 )
-                Text(
-                    text = "ID: $userId",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
             }
         }
     }
@@ -118,17 +129,15 @@ fun UserCard(
 
 
 @Composable
-fun ChatScreen(viewModel: ChatViewModel, my_id: Int) {
+fun ChatScreen(viewModel: ChatViewModel) {
     val messages = emptyList<String>()
-//    val messages by viewModel.messages.collectAsState()
-    val status by viewModel.status.collectAsState()
+
     var inputMessage by remember { mutableStateOf("") }
 
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text(text = "Status: $status", style = MaterialTheme.typography.titleMedium)
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp, 8.dp)) {
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         LazyColumn(
             modifier = Modifier.weight(2f).fillMaxWidth().padding(vertical = 10.dp),
@@ -138,9 +147,6 @@ fun ChatScreen(viewModel: ChatViewModel, my_id: Int) {
 //                Log.i(TAG, "Here we have message: $message")
 
                 val data = Json.decodeFromString<Message>(message)
-                val sender = if (data.from == my_id) "You" else data.username
-
-                Text(text = sender + ": " + data.text, modifier = Modifier.padding(2.dp))
             }
         }
 
@@ -157,7 +163,6 @@ fun ChatScreen(viewModel: ChatViewModel, my_id: Int) {
                     viewModel.sendMessage(inputMessage)
                     inputMessage = ""
                 },
-                enabled = status == "Connected"
             ) {
                 Text("Send")
             }

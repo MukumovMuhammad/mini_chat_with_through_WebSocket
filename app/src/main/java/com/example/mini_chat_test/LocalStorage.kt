@@ -10,7 +10,7 @@ fun saveToSharedPreferences(context: Context, key: String, value: String) {
     }
 }
 
-fun saveMyId(context: Context, username: String, id: Int) {
+fun saveUsernameAndId(context: Context, username: String, id: Int?) {
     val sharedPref = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
     with(sharedPref.edit()) {
         putString("id", id.toString())

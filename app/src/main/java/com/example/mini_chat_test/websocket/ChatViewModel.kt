@@ -1,16 +1,19 @@
 package com.example.mini_chat_test.websocket
 
 import AppWebSocketListener
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.mini_chat_test.UserDataResponse
-import kotlinx.coroutines.Dispatchers
+import com.example.mini_chat_test.DataClasses.UserDataResponse
+import com.example.mini_chat_test.saveUsernameAndId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
@@ -52,7 +55,7 @@ class ChatViewModel: ViewModel() {
         }
     }
 
-    fun login(username: String, password: String){
+    fun login(context: Context, username: String, password: String){
 
         Log.i("ChatViewModel_TAG", "Trying to login with username: $username and password: $password")
 
@@ -104,6 +107,7 @@ class ChatViewModel: ViewModel() {
                     if(result?.status == true){
                         Log.i("ChatViewModel_TAG", "Login success")
                         _login_status.value = "success"
+                        saveUsernameAndId(context, username, result?.id!!)
                         WebSocketInit(result?.id)
 
                     }
@@ -118,7 +122,7 @@ class ChatViewModel: ViewModel() {
 
     }
 
-    fun SignUp(username: String, password: String){
+    fun SignUp(context: Context, username: String, password: String){
 
         Log.i("ChatViewModel_TAG", "Trying to Sign Up with username: $username and password: $password")
 
@@ -160,11 +164,11 @@ class ChatViewModel: ViewModel() {
                     if(result?.status == true){
                         Log.i("ChatViewModel_TAG", "Login success")
                         _login_status.value = "success"
+                        Log.i("ChatViewModel_TAG", "id: ${result?.id}")
+                        saveUsernameAndId(context, username, result?.id!!)
                         WebSocketInit(result?.id)
 
                     }
-
-
 
 
                 }
@@ -185,11 +189,27 @@ class ChatViewModel: ViewModel() {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                val body = response.body?.string()
+                val body: String? = response.body?.string()
                 println("Response: $body")
+
+                val root = Json.parseToJsonElement(body!!).jsonArray
+
+                val pairs: List<Pair<String, Int>> = root.map { item ->
+                    val arr = item.jsonArray
+                    arr[0].jsonPrimitive.content to arr[1].jsonPrimitive.int
+                }
+
+                 _userlist.value = pairs
             }
         })
     }
+
+    fun LogOut(context: Context){
+        saveUsernameAndId(context, "", null)
+        webSocketClient?.disconnect()
+        _status.value = "Disconnected"
+    }
+
     fun sendMessage(message: String) {
         if (message.isNotBlank()) {
             webSocketClient?.sendMessage(message)
