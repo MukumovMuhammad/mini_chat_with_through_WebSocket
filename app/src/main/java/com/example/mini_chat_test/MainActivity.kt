@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -47,6 +48,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+
+
         viewModel.context = this
         if (getSavedId(this) != null){
             viewModel.WebSocketInit(getSavedId(this)?.toInt())
@@ -60,7 +63,6 @@ class MainActivity : ComponentActivity() {
                     loginScreen(viewModel, status)
                 }
                 else{
-
                     if (selectedId.value != null) {
                         BackHandler {
                             selectedId.value = null
@@ -70,12 +72,14 @@ class MainActivity : ComponentActivity() {
                         viewModel.getUsers()
                         val users by viewModel.userlist.collectAsState()
 
-                        if (users != null) {
+                        if(users != null) {
                             UserListScreen(viewModel, users) { userId ->
                                 selectedId.value = userId
                                 Log.i(TAG, "Selected user ID: $userId")
                             }
                         }
+
+                        Text("It seems no one has registered yet :(")
                     }
                 }
             }

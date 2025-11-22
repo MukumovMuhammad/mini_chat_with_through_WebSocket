@@ -15,14 +15,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mini_chat_test.DataClasses.MessageData
 import com.example.mini_chat_test.websocket.ChatViewModel
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 
 
@@ -47,35 +53,60 @@ fun UserListScreen(
     users: List<Pair<String, Int>>,   // (username, userId)
     onUserSelected: (Int) -> Unit
 ) {
-    val context = LocalContext.current
-    Column() {
-        Row(modifier = Modifier.fillMaxWidth(),  horizontalArrangement = Arrangement.spacedBy(16.dp)){
-            Text(
-                text = "Your profile ${getSavedUsername(LocalContext.current)}",
-                modifier = Modifier.padding(16.dp),
-                textAlign = TextAlign.Center)
-            Button(
-                onClick = { viewModel.LogOut() },
-                modifier = Modifier.padding(16.dp)
-            ) { Text("LogOut") }
-        }
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp, 20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(users) { user ->
-                if (user.second != getSavedId(context)?.toInt()){
-                    UserCard(
-                        username = user.first,
-                        onClick = { onUserSelected(user.second) }
-                    )
-                }
 
+    val context = LocalContext.current
+
+    var isLoading by remember { mutableStateOf(false) }
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    LaunchedEffect(isLoading) {
+        if (isLoading) {
+            delay(1000)
+            isLoading = false
+        }
+    }
+
+
+    PullToRefreshBox(
+        modifier = Modifier.fillMaxSize(),
+        state = pullToRefreshState,
+        isRefreshing = isLoading,
+        onRefresh = {
+            isLoading = true
+            viewModel.getUsers()
+        }
+    ){
+        Column() {
+            Row(modifier = Modifier.fillMaxWidth(),  horizontalArrangement = Arrangement.spacedBy(16.dp)){
+                Text(
+                    text = "Your profile ${getSavedUsername(LocalContext.current)}",
+                    modifier = Modifier.padding(16.dp),
+                    textAlign = TextAlign.Center)
+                Button(
+                    onClick = { viewModel.LogOut() },
+                    modifier = Modifier.padding(16.dp)
+                ) { Text("LogOut") }
+            }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp, 20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(users) { user ->
+                    if (user.second != getSavedId(context)?.toInt()){
+                        UserCard(
+                            username = user.first,
+                            onClick = { onUserSelected(user.second) }
+                        )
+                    }
+
+                }
             }
         }
     }
+
+
 
 }
 

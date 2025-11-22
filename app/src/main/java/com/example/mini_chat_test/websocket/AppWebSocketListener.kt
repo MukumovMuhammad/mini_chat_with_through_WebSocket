@@ -32,10 +32,12 @@ class AppWebSocketListener(
     }
 
     override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+        Log.e("WEbSocketTAG", "The WebSocket is closed")
         onStatus("Closing: $code / $reason")
     }
 
     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+        Log.e("WEbSocketTAG", "The WebSocket is Failed")
         onStatus("Failed: ${t.message}")
         t.printStackTrace()
     }
