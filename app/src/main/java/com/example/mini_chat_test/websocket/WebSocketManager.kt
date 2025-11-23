@@ -15,6 +15,7 @@ object WebSocketManager {
     private const val WEB_SOCKET_URL = "wss://mini-chat-service-1091763228160.europe-west1.run.app/ws?user_id="
     private var webSocketClient: WebSocketClient? = null
 
+
     // Use a custom scope that won't be cancelled with a ViewModel
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -37,8 +38,9 @@ object WebSocketManager {
                 },
                 onStatus = { newStatus ->
                     scope.launch {
+                        Log.i("WebSocketManager_TAG", "New status has been got in manager ${newStatus}")
                         _connectionStatus.value = newStatus
-                        if (newStatus == "Closed" || newStatus == "Failed") {
+                        if (newStatus == "Closed" || newStatus == "Failed" || newStatus == "Failed: null") {
                             Log.e("WebSocket", "Disconnected, trying to reconnect...")
                             startConnection(userId)
                         }

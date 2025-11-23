@@ -64,10 +64,10 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            val status by viewModel.status.collectAsState()
+            val status by viewModel.login_status.collectAsState()
             if (selectedId.value != null)  viewModel.SelectedUSerID = selectedId.value
             Mini_chat_testTheme {
-                if (status != "Connected"){
+                if (status != "success"){
                     LoginScreen(viewModel)
                 }
                 else{

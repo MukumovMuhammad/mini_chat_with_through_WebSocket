@@ -122,7 +122,7 @@ class ChatViewModel: ViewModel() {
         Log.i("ChatViewModel_TAG", "Trying to Sign Up with username: $username and password: $password")
 
 
-
+        _login_status.value = "Connecting"
 
         val json = """
                 {
@@ -227,20 +227,22 @@ class ChatViewModel: ViewModel() {
                 if (message?.contains("\"type\":\"ping\"") ?: false){
                     Log.i("WebSocketPing", "This is a ping from the server")
                     WebSocketManager.sendMessage("\"type\":\"ping\"")
-                    return@collect
                 }
-                // ... your message handling logic here is fine ...
-                if (message != null) {
-                    Log.i("Received Message TAG", "We received a message! $message")
-                    val result = Json.decodeFromString<MessageData>(message)
-                    val currentMessagesForUser = _UserMessages.value[result.from] ?: emptyList()
-                    val updatedMessagesForUser = currentMessagesForUser + "${result.username}: ${result.text}"
-                    _UserMessages.value = _UserMessages.value + (result.from to updatedMessagesForUser)
+                else{
+                    // ... your message handling logic here is fine ...
+                    if (message != null) {
+                        Log.i("Received Message TAG", "We received a message! $message")
+                        val result = Json.decodeFromString<MessageData>(message)
+                        val currentMessagesForUser = _UserMessages.value[result.from] ?: emptyList()
+                        val updatedMessagesForUser = currentMessagesForUser + "${result.username}: ${result.text}"
+                        _UserMessages.value = _UserMessages.value + (result.from to updatedMessagesForUser)
 
-                    if (SelectedUSerID != result.from){
-                        showNotification(context!!, result.username, result.text)
+                        if (SelectedUSerID != result.from){
+                            showNotification(context!!, result.username, result.text)
+                        }
                     }
                 }
+
             }
         }
     }
